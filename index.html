@@ -136,7 +136,7 @@
 		});
 	}
 
-	function show() {
+	/*function show() {
 		tab_results.innerHTML = "";
 		resultArr = [];
 		const str = name_input.value.toLowerCase().replace(/[^a-zA-Z0-9 ]/g, ""); // Clean input
@@ -155,8 +155,11 @@
 					const cell = document.createElement("td");
 					cell.innerHTML = entry;
 
-					// Check if the entry is crossed
-					if (document.querySelector(`.crossed[innertext="${entry}"]`)) {
+					// Initially check if the entry is crossed
+					const cellText = entry.trim();
+					const isCrossed = await checkIfCrossed(cellText); // Check if this entry is crossed
+
+					if (isCrossed) {
 						cell.classList.add("crossed");
 					}
 
@@ -169,6 +172,8 @@
 							} else {
 								await removeCrossedEntry(cellText);
 							}
+							// Re-load crossed entries to get an updated view
+							await loadCrossedEntries();
 						} catch (error) {
 							console.error("Error during cell click handling: ", error);
 						}
@@ -178,6 +183,78 @@
 					tab_results.appendChild(row);
 				}
 			}
+		}
+	}*/
+	async function show() {
+		tab_results.innerHTML = "";
+		resultArr = [];
+		const str = name_input.value.toLowerCase().replace(/[^a-zA-Z0-9 ]/g, ""); // Clean input
+
+		if (str.length > 2) {
+			for (let i = 0; i < arr1.length; i++) {
+				if (arr1[i].toLowerCase().includes(str)) {
+					resultArr.push(arr2[i]);
+				}
+			}
+			if (resultArr.length === 0) {
+				tab_results.innerHTML = "<tr><td>Aucun résultat ...<br><span style='font-size:1em'>🙀</span><br>Essaie encore !<br><span style='font-size:1em'>😻</span></td></tr>";
+			} else {
+				for (const entry of resultArr) {
+					const row = document.createElement("tr");
+					const cell = document.createElement("td");
+					cell.innerHTML = entry;
+
+					// Initially check if the entry is crossed
+					const cellText = entry.trim();
+					const isCrossed = await checkIfCrossed(cellText); // Use await correctly
+
+					if (isCrossed) {
+						cell.classList.add("crossed");
+					}
+
+					cell.onclick = async function() {
+						const cellText = this.innerText.trim();
+						this.classList.toggle("crossed");
+						try {
+							if (this.classList.contains("crossed")) {
+								await saveCrossedEntry(cellText);
+							} else {
+								await removeCrossedEntry(cellText);
+							}
+							// Re-load crossed entries to get an updated view
+							await loadCrossedEntries();
+						} catch (error) {
+							console.error("Error during cell click handling: ", error);
+						}
+					};
+
+					row.appendChild(cell);
+					tab_results.appendChild(row);
+				}
+			}
+		}
+	}
+	// Check if the entry is crossed
+	async function checkIfCrossed(cellText) {
+		const snapshot = await db.collection('crossedEntries').where("text", "==", cellText).get();
+		return !snapshot.empty;  // Returns true if the entry is found in Firestore
+	}
+
+	async function loadCrossedEntries() {
+		try {
+			const snapshot = await db.collection('crossedEntries').get();
+			snapshot.forEach(doc => {
+				const data = doc.data();
+				const crossedText = data.text;
+				const rows = tab_results.children;
+				for (var i = 0; i < rows.length; i++) {
+					if (crossedText === rows[i].children[0].innerText.trim()) {
+						rows[i].children[0].classList.add("crossed");
+					}
+				}
+			});
+		} catch (error) {
+			console.error("Error loading crossed entries: ", error);
 		}
 	}
 
