@@ -4,7 +4,7 @@
 	<head>
 		<meta charset="utf-8">
 		<meta name="viewport" content="width=device-width">
-		<title>PCOUNTER Search v1</title>
+		<title>PCOUNTER Search v1.1</title>
 		<link rel="icon" type="image/png" href="favicon.png" />
 		<style>
 			html,
@@ -67,9 +67,9 @@
 	<body>
 	<br>
 	<div id="logo">
-		<h1><b>PCOUNTER SEARCH v1</b></1>
+		<h1><b>PCOUNTER SEARCH v1.1</b></1>
 	</div>
-	<input autocapitalize="off" type="text" id="name_input"><br><br>
+	<input autocapitalize="off" type="text" id="name_input" autofocus><br><br>
 	<div id="fill"></div>
 	<div id="progress"></div>
 	<table class="center">
@@ -136,7 +136,76 @@
 		});
 	}
 
+	// Debounce function to limit the rate at which a function can fire
+	function debounce(fn, delay) {
+		let timeoutId;
+		return function(...args) {
+			if (timeoutId) {
+				clearTimeout(timeoutId);
+			}
+			timeoutId = setTimeout(() => {
+				fn.apply(this, args);
+			}, delay);
+		};
+	}
+
 	async function show() {
+		tab_results.innerHTML = "";
+		resultArr = [];
+		name_input.value = name_input.value.replace(/é|è|ê|ë/g, "e");
+		name_input.value = name_input.value.replace("ï", "i");
+		name_input.value = name_input.value.replace("ô", "o");
+		name_input.value = name_input.value.replace("ç", "c");
+		const str = name_input.value.toLowerCase();
+
+		if (str.length > 2) {
+			for (let i = 0; i < arr1.length; i++) {
+				if (arr1[i].toLowerCase().includes(str)) {
+					resultArr.push(arr2[i]);
+				}
+			}
+			if (resultArr.length === 0) {
+				tab_results.innerHTML = "<tr><td><span style='font-size:1em'>🙀</span> Aucun résultat ...<br><span style='font-size:1em'>😻</span> Essaie encore !</td></tr>";
+			} else {
+				for (const entry of resultArr) {
+					const row = document.createElement("tr");
+					const cell = document.createElement("td");
+					cell.innerHTML = entry;
+
+					// Initially check if the entry is crossed
+					const cellText = entry.trim();
+					const isCrossed = await checkIfCrossed(cellText); // Use await correctly
+
+					if (isCrossed) {
+						cell.classList.add("crossed");
+					}
+
+					cell.onclick = async function() {
+						const cellText = this.innerText.trim();
+						this.classList.toggle("crossed");
+						try {
+							if (this.classList.contains("crossed")) {
+								await saveCrossedEntry(cellText);
+							} else {
+								await removeCrossedEntry(cellText);
+							}
+							// Re-load crossed entries to get an updated view
+							await loadCrossedEntries();
+						} catch (error) {
+							console.error("Error during cell click handling: ", error);
+						}
+					};
+
+					row.appendChild(cell);
+					tab_results.appendChild(row);
+				}
+			}
+		}
+	}
+
+
+
+	/*async function show() {
 		tab_results.innerHTML = "";
 		resultArr = [];
 		name_input.value=name_input.value.replace("é","e");
@@ -192,7 +261,8 @@
 				}
 			}
 		}
-	}
+	}*/
+
 	// Check if the entry is crossed
 	async function checkIfCrossed(cellText) {
 		const snapshot = await db.collection('crossedEntries').where("text", "==", cellText).get();
@@ -225,7 +295,7 @@
 
 	// Initialize related events
 	function init() {
-		name_input.addEventListener("keyup", show);
+		name_input.addEventListener("keyup", debounce(show, 300)); // 300 milliseconds delay
 		loadCrossedEntries();
 	}
 
