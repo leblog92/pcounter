@@ -57,7 +57,7 @@
     </div>
     <input autocapitalize="off" type="text" id="name_input" autofocus><br>
     <!-- Counter for crossed lines -->
-    <div id="crossed_counter" style="font-size: 1.5em; margin-top: 20px;">Nombre de lignes croisées: 0</div><br>
+    <div id="crossed_counter" style="font-size: 1.5em; margin-top: 20px;">Nombre de lignes barrées: 0</div><br>
     <table class="center">
         <tbody id="tab_results"></tbody>
     </table>
@@ -144,7 +144,7 @@
         async function show() {
             tab_results.innerHTML = "";
             const str = name_input.value.replace(/é|è|ê|ë/g, "e")
-                                         .replace(/ï/g, "i")
+                                         .replace(/î|ï/g, "i")
                                          .replace(/ô/g, "o")
                                          .replace(/ç/g, "c").toLowerCase();
 
